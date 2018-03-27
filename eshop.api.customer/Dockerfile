@@ -7,5 +7,5 @@ COPY . /app
 RUN dotnet publish -c Release -o out
 #ENTRYPOINT ["customers", "./out/eshop.api.customer.dll"]
 #CMD dotnet run >> ./logs
-EXPOSE 5000
+EXPOSE 12345
 CMD [ "dotnet", "run" ]
