@@ -1,5 +1,6 @@
 FROM microsoft/dotnet:2.1-sdk
-WORKDIR ./app
+RUN mkdir /app && cd /app
+#WORKDIR ./app
 COPY *.csproj ./
 RUN dotnet restore
 COPY . ./
