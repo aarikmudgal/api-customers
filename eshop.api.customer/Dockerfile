@@ -7,5 +7,5 @@ COPY . /app
 #RUN dotnet publish -c Release -o out && cd /app/out
 #WORKDIR /app/out
 #ENTRYPOINT ["customers", "/app/out/eshop.api.customer.dll"]
-EXPOSE 12345
+EXPOSE 8080
 CMD [ "dotnet", "run" ]
