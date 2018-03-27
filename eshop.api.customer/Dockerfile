@@ -5,7 +5,6 @@ COPY *.csproj /app
 RUN dotnet restore
 COPY . /app
 RUN dotnet publish -c Release -o out
-#ENTRYPOINT ["customers", "out/eshop.api.customer.dll"]
-#CMD dotnet run >> ./logs
+ENTRYPOINT ["customers", "/app/out/eshop.api.customer.dll"]
 EXPOSE 12345
 CMD [ "dotnet", "run" ]
