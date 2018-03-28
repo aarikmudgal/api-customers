@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Text;
 
 namespace eshop.api.customer.Controllers
 {
@@ -50,8 +51,12 @@ namespace eshop.api.customer.Controllers
         [Route("login")]
         public IActionResult Login([FromBody]JObject value)
         {
-            Customer custs = JsonConvert.DeserializeObject<Customer>(value.ToString());
-            bool customerExists = customers.Exists(x => x.Username == custs.Username && x.Password == custs.Password);
+            Customer customer = JsonConvert.DeserializeObject<Customer>(value.ToString());
+
+            byte[] bytes = Encoding.UTF8.GetBytes(customer.Password);
+            string encodedPassword = Convert.ToBase64String(bytes);
+
+            bool customerExists = customers.Exists(x => x.Username == customer.Username && x.Password == encodedPassword);
             IActionResult response = customerExists ? Ok("Customer Authorised") : StatusCode(401, "Customer Unauthorised");
             return response;
         }
@@ -85,6 +90,11 @@ namespace eshop.api.customer.Controllers
                 cust = JsonConvert.DeserializeObject<Customer>(value.ToString());
                 cust.CustomerId = Guid.NewGuid().ToString();
 
+                byte[] bytes = Encoding.UTF8.GetBytes(cust.Password);
+                string encodedPassword = Convert.ToBase64String(bytes);
+
+                cust.Password = encodedPassword;
+
                 // add new customer to list
                 customers.Add(cust);
                 WriteCustomersToFile();
@@ -110,6 +120,11 @@ namespace eshop.api.customer.Controllers
                 {
                     return NotFound($"Customer with {id} not found");
                 }
+                byte[] bytes = Encoding.UTF8.GetBytes(inputCustomer.Password);
+                string encodedPassword = Convert.ToBase64String(bytes);
+
+                inputCustomer.Password = encodedPassword;
+
                 customerToUpdate.DeepCopy(inputCustomer);
                 WriteCustomersToFile();
             }
