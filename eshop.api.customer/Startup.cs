@@ -27,11 +27,11 @@ namespace eshop.api.customer
             {
                 app.UseDeveloperExceptionPage();
             }
-
-            app.UseMvc();
             
             // Shows UseCors with CorsPolicyBuilder.
             app.UseCors(builder => builder.WithOrigins("http://35.200.145.203"));
+            
+            app.UseMvc();
         }
     }
 }
