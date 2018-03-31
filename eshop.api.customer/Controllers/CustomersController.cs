@@ -56,8 +56,24 @@ namespace eshop.api.customer.Controllers
             byte[] bytes = Encoding.UTF8.GetBytes(customer.Password);
             string encodedPassword = Convert.ToBase64String(bytes);
 
-            bool customerExists = customers.Exists(x => x.Username == customer.Username && x.Password == encodedPassword);
-            IActionResult response = customerExists ? Ok("Customer Authorised") : StatusCode(401, "Customer Unauthorised");
+            Customer customerObj = customers.Find(x => x.Username == customer.Username && x.Password == encodedPassword);
+
+            IActionResult response = null;
+            if (customerObj != null)
+            {
+                JObject successobj = new JObject()
+                {
+                    { "StatusMessage", "Customer Authorised" },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(customerObj)) }
+                };
+                response = Ok(successobj);
+                
+            }
+            else
+            {
+                response = StatusCode(401, "Customer Unauthorised");
+            }
+
             return response;
         }
 
@@ -66,7 +82,7 @@ namespace eshop.api.customer.Controllers
         public IActionResult GetCustomers()
         {
             return new ObjectResult(customers);
-        }               
+        }
 
         // GET api/customers/5
         [HttpGet("{username}")]
@@ -116,7 +132,7 @@ namespace eshop.api.customer.Controllers
             {
                 Customer inputCustomer = JsonConvert.DeserializeObject<Customer>(value.ToString());
                 Customer customerToUpdate = customers.Find(cust => cust.CustomerId == id);
-                if(customerToUpdate == null)
+                if (customerToUpdate == null)
                 {
                     return NotFound($"Customer with {id} not found");
                 }
