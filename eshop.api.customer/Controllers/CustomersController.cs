@@ -1,177 +1,204 @@
-﻿using System.Linq;
+﻿using System;
 using System.Collections.Generic;
-using eshop.api.customer.Models;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
+using eshop.api.customer.dal.Models;
+using eshop.api.customer.dal.DBContext;
+using eshop.api.customer.dal.Services;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Text;
+using Newtonsoft.Json;
 
 namespace eshop.api.customer.Controllers
 {
-    [Route("api/[controller]")]
+    [Produces("application/json")]
+    [Route("api/Customers")]
     public class CustomersController : Controller
     {
-        private static List<Customer> customers = null;
+        private readonly CustomerContext _context;
+        ICustomerService customerService;
+        public bool DBDriven = true;
 
-        static CustomersController()
+        public CustomersController(CustomerContext context)
         {
-            LoadCustomersFromFile();
-        }
-
-        private static void LoadCustomersFromFile()
-        {
-            customers = JsonConvert.DeserializeObject<List<Customer>>(System.IO.File.ReadAllText(@"customers.json"));
-        }
-
-        private void WriteCustomersToFile()
-        {
-            try
+            _context = context;
+            if (DBDriven)
             {
-                System.IO.File.WriteAllText(@"customers.json", JsonConvert.SerializeObject(customers));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        // GET api/customers/health
-        [HttpGet]
-        [Route("health")]
-        public IActionResult GetHealth(string health)
-        {
-            bool fileExists = System.IO.File.Exists("./customers.json");
-            IActionResult response = fileExists ? Ok("Service is Healthy") : StatusCode(500, "Customers file not available");
-            return response;
-        }
-
-        // POST api/customers/login
-        [HttpPost]
-        [Route("login")]
-        public IActionResult Login([FromBody]JObject value)
-        {
-            Customer customer = JsonConvert.DeserializeObject<Customer>(value.ToString());
-
-            byte[] bytes = Encoding.UTF8.GetBytes(customer.Password);
-            string encodedPassword = Convert.ToBase64String(bytes);
-
-            Customer customerObj = customers.Find(x => x.Username == customer.Username && x.Password == encodedPassword);
-
-            IActionResult response = null;
-            if (customerObj != null)
-            {
-                JObject successobj = new JObject()
-                {
-                    { "StatusMessage", "Customer Authorised" },
-                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(customerObj)) }
-                };
-                response = Ok(successobj);
-                
+                customerService = new CustomerDBService(_context);
             }
             else
             {
-                response = StatusCode(401, "Customer Unauthorised");
+                //customerService = new CustomerFileService();
             }
-
-            return response;
         }
 
-        // GET api/customers
+        // GET: api/Customers
         [HttpGet]
         public IActionResult GetCustomers()
         {
-            return new ObjectResult(customers);
+            return new ObjectResult(customerService.GetCustomers());
         }
 
-        // GET api/customers/5
-        [HttpGet("{username}")]
-        public IActionResult GetCustomerByUsername(string username)
+        // GET: api/Customers/5
+        [HttpGet("{id}")]
+        public IActionResult GetCustomer([FromRoute] string id)
         {
-            Customer customer = customers.Find(c => c.Username == username);
-            if (customer != null)
-                return new ObjectResult(customer);
-            else
-                return NotFound($"Customer with Username - {username} not found");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var customer = customerService.GetCustomer(id);
+
+            if (customer == null)
+            {
+                return NotFound($"Customer with Id - {id} not found");
+            }
+
+            return Ok(customer);
         }
 
-        // POST api/customers
-        [HttpPost]
-        public IActionResult AddCustomer([FromBody]JObject value)
+        // PUT: api/Customers/5
+        [HttpPut("{id}")]
+        public IActionResult UpdateCustomer([FromRoute] string id, [FromBody] Customer customer)
         {
-            Customer cust;
+            string statusMessage;
+            Customer updatedCustomer;
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (id != customer.CustomerId)
+            {
+                return BadRequest();
+            }
             try
             {
-                // create new customer object
-                cust = JsonConvert.DeserializeObject<Customer>(value.ToString());
-                cust.CustomerId = Guid.NewGuid().ToString();
-
-                byte[] bytes = Encoding.UTF8.GetBytes(cust.Password);
-                string encodedPassword = Convert.ToBase64String(bytes);
-
-                cust.Password = encodedPassword;
-
-                // add new customer to list
-                customers.Add(cust);
-                WriteCustomersToFile();
+                bool status = customerService.UpdateCustomer(id, customer, out updatedCustomer, out statusMessage);
+                if (updatedCustomer == null)
+                {
+                    return NotFound($"Customer with id {id} not found");
+                }
+                JObject successobj = new JObject()
+                {
+                    { "StatusMessage", statusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(updatedCustomer)) }
+                };
+                return Ok(successobj);
             }
             catch (Exception ex)
             {
-                // log the exception
-                // internal server errror
                 return StatusCode(500, ex.Message);
+                //throw;
             }
-            return Ok($"Customer added successfully. New Customer Id - {cust.CustomerId}");
+
         }
 
-        // PUT api/customers/5
-        [HttpPut("{id}")]
-        public IActionResult ChangeCustomer(string id, [FromBody]JObject value)
+        // POST: api/Customers
+        [HttpPost]
+        public IActionResult AddCustomer([FromBody] Customer customer)
         {
+            Customer addedCustomer;
+            string statusMessage;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                Customer inputCustomer = JsonConvert.DeserializeObject<Customer>(value.ToString());
-                Customer customerToUpdate = customers.Find(cust => cust.CustomerId == id);
-                if (customerToUpdate == null)
+                customerService.InsertCustomer(customer, out addedCustomer, out statusMessage);
+                JObject successobj = new JObject()
                 {
-                    return NotFound($"Customer with {id} not found");
-                }
-                byte[] bytes = Encoding.UTF8.GetBytes(inputCustomer.Password);
-                string encodedPassword = Convert.ToBase64String(bytes);
-
-                inputCustomer.Password = encodedPassword;
-
-                customerToUpdate.DeepCopy(inputCustomer);
-                WriteCustomersToFile();
+                    { "StatusMessage", statusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(addedCustomer)) }
+                };
+                return Ok(successobj);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                // log error/exception
+
                 return StatusCode(500, ex.Message);
             }
-            return Ok($"Customer with ID - {id} updated successfully");
+
         }
 
-        // DELETE api/customers/5
+        // DELETE: api/Customers/5
         [HttpDelete("{id}")]
-        public IActionResult DeleteCustomer(string id)
+        public IActionResult DeleteCustomer([FromRoute] string id)
         {
+            Customer deletedCustomer;
+            string statusMessage;
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                Customer customer = customers.Find(x => x.CustomerId == id);
-                if (customer == null)
+                var status = customerService.DeleteCustomer(id, out deletedCustomer, out statusMessage);
+                if (deletedCustomer == null)
                 {
-                    return NotFound($"Customer with {id} not found");
+                    return NotFound($"Customer with id {id} not found");
                 }
-                customers.Remove(customer);
-                WriteCustomersToFile();
+                JObject successobj = new JObject()
+                {
+                    { "StatusMessage", statusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(deletedCustomer)) }
+                };
+                return Ok(successobj);
+
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                // log the exception
                 return StatusCode(500, ex.Message);
             }
-            return Ok($"Customer with custome id - {id} deleted successfully");
+
         }
+
+        // DELETE: api/Customers/5
+        [HttpPost]
+        [Route("login")]
+        public IActionResult Login([FromBody] Customer customer)
+        {
+            string statusMessage;
+            Customer validCustomer;
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var isValidUser = customerService.Authenticate(customer.Username, customer.Password, out validCustomer, out statusMessage);
+                if (isValidUser == true)
+                {
+                    JObject successobj = new JObject()
+                    {
+                        { "StatusMessage", statusMessage },
+                        { "Customer", JObject.Parse(JsonConvert.SerializeObject(validCustomer)) }
+                    };
+                    return Ok(successobj);
+                }
+                else
+                {
+                    return  StatusCode(401, statusMessage);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
+
     }
 }

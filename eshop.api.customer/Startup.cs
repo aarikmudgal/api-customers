@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using eshop.api.customer.dal.DBContext;
 
 namespace eshop.api.customer
 {
@@ -18,6 +20,9 @@ namespace eshop.api.customer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddEntityFrameworkNpgsql().AddDbContext<eshop.api.customer.dal.DBContext.CustomerContext>
+                (opt => opt.UseNpgsql(Configuration.GetConnectionString("ConnectionString")));
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -27,8 +32,7 @@ namespace eshop.api.customer
             {
                 app.UseDeveloperExceptionPage();
             }
-            
-            // Shows UseCors with CorsPolicyBuilder.
+
             app.UseCors(builder => builder.WithOrigins("http://35.200.233.17").AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 
             app.UseMvc();
