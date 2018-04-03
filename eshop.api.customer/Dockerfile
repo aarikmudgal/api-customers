@@ -1,6 +1,7 @@
 FROM microsoft/dotnet:2.1-sdk
 RUN mkdir /app && cd /app
 COPY *.csproj /app
+WORKDIR /app
 RUN dotnet restore
 COPY ../eshop.api.customer /app
 COPY ../eshop.api.customer.dal /app
