@@ -15,7 +15,5 @@ spec:
       containers:
       - name: api-customers
         image: gcr.io/ancient-yeti-166518/api-customers:latest
-        args:
-        - -msg=Ahoy
         ports:
         - containerPort: 8001
