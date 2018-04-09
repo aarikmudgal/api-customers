@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: api-customers
-        image: gcr.io/ancient-yeti-166518/customers:commitId-5577c3122d1e169c12a1aa787d26d6c6c1c818a7
+        image: gcr.io/ancient-yeti-166518/customers:commitId-685fab98a52ea4d2a3e377f1b13322d9424eec39
         imagePullPolicy: Always
         ports:
         - containerPort: 8001
