@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   annotations:
     flux.weave.works/automated: "true"
-    flux.weave.works/tag.api-customers: glob:latest
   name: api-customers
 spec:
   minReadySeconds: 5
