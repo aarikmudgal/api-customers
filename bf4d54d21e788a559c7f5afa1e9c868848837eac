@@ -1,0 +1,1 @@
+{"jobID":"4d92bb83-6c4d-a849-00b2-a1288b4636be","spec":{"type":"policy","cause":{"Message":"","User":"aarikmudgal \u003caarikmudgal@gmail.com\u003e"},"spec":{"default:deployment/api-customers":{"add":{"automated":"true"},"remove":null}}},"result":null}
