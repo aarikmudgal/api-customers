@@ -4,6 +4,9 @@ metadata:
   name: api-customers
 spec:
   ports:
-    - port: 8001
+  - name: http
+    protocol: TCP
+    port: 8001
+    targetPort: 8001
   selector:
     name: api-customers
