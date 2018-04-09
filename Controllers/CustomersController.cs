@@ -168,7 +168,7 @@ namespace eshop.api.customer.Controllers
             }
             catch (System.Exception ex)
             {
-                // log the exception
+                // log the exception and observe
                 return StatusCode(500, ex.Message);
             }
             return Ok($"Customer with custome id - {id} deleted successfully");
