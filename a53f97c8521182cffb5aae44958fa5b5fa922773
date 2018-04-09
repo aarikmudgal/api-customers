@@ -1,0 +1,1 @@
+{"jobID":"9b2bb95d-2d47-4e30-f6d3-e5047a380eff","spec":{"type":"policy","cause":{"Message":"","User":"aarikmudgal \u003caarikmudgal@gmail.com\u003e"},"spec":{"default:deployment/api-customers":{"add":{"tag.api-customers":"glob:commitId-*"},"remove":null}}},"result":null}
