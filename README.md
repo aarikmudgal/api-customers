@@ -1,3 +1,0 @@
-# api-customers
-
-API-Customers
