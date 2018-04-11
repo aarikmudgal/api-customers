@@ -1,5 +1,6 @@
 ﻿using eshop.api.customer.dal.DBContext;
 using eshop.api.customer.dal.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
@@ -16,10 +17,36 @@ namespace eshop.api.customer.dal.Services
         public CustomerDBService(CustomerContext context)
         {
             _context = context;
+
+            CheckConnection();
         }
+
+        private void CheckConnection()
+        {
+            try
+            {
+                _context.Database.GetDbConnection();
+                _context.Database.OpenConnection();
+            }
+            catch (Exception)
+            {
+                // log db connectivity issue
+                throw;
+            }
+        }
+
         public IEnumerable<Customer> GetCustomers()
         {
-            return _context.Customers;
+            try
+            {
+                return _context.Customers;
+            }
+            catch (Exception e)
+            {
+
+                throw e;
+            }
+            
         }
 
         public Customer GetCustomer(string id)
@@ -39,7 +66,12 @@ namespace eshop.api.customer.dal.Services
                     statusMessage = $"The Customer ID {id} does not exist.";
                 }
 
-                _context.SaveChangesAsync();
+                byte[] bytes = Encoding.UTF8.GetBytes(customer.Password);
+                string encodedPassword = Convert.ToBase64String(bytes);
+
+                customer.Password = encodedPassword;
+
+                _context.SaveChanges();
                 statusMessage = $"Customer details updated successfully for customer Id - {id}";
                 updatedCustomer = customer;
                 return true;
@@ -62,16 +94,17 @@ namespace eshop.api.customer.dal.Services
                 customer.Password = encodedPassword;
 
                 _context.Customers.Add(customer);
-                _context.SaveChangesAsync();
+                //_context.SaveChangesAsync();
+                int status =_context.SaveChanges();
                 addedCustomer = customer;
                 statusMessage = "New customer added successfully";
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                statusMessage = e.Message;
+                //statusMessage = e.Message;
                 addedCustomer = null;
-                throw e;
+                throw ;
             }
 
         }
@@ -87,9 +120,9 @@ namespace eshop.api.customer.dal.Services
                     return false;
                 }
                 _context.Customers.Remove(customer);
-                _context.SaveChangesAsync();
+                _context.SaveChanges();
                 deletedCustomer = customer;
-                statusMessage = "Customer with id - {id} deleted successfully";
+                statusMessage = $"Customer with id - {id} deleted successfully";
                 return true;
             }
             catch (Exception e)

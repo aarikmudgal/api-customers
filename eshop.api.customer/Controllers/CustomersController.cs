@@ -34,11 +34,46 @@ namespace eshop.api.customer.Controllers
             }
         }
 
+        // GET api/customers/health
+        [HttpGet]
+        [Route("health")]
+        public IActionResult GetHealth(string health)
+        {
+            //bool fileExists = System.IO.File.Exists("./customers.json");
+            bool dbConnOk = false;
+            string statusMessage = string.Empty;
+            try
+            {
+                if (_context.CheckConnection())
+                {
+                    dbConnOk = true;
+                    statusMessage = "Customer Service is Healthy";
+                }
+
+            }
+            catch (Exception ex)
+            {
+                statusMessage = $"Customers database not available - {ex.Message}";
+                
+            }
+            IActionResult response = dbConnOk ? Ok("Customer Service is Healthy") : StatusCode(500, "Customers database not available");
+            return response;
+        }
+
         // GET: api/Customers
         [HttpGet]
         public IActionResult GetCustomers()
         {
-            return new ObjectResult(customerService.GetCustomers());
+            try
+            {
+                return new ObjectResult(customerService.GetCustomers());
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(500, $"Error while getting customers - {ex.Message}");
+            }
+            
         }
 
         // GET: api/Customers/5
@@ -122,7 +157,7 @@ namespace eshop.api.customer.Controllers
             catch (Exception ex)
             {
 
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, ex.Message + " Inner Exception- " + ex.InnerException.Message);
             }
 
         }

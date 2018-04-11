@@ -14,5 +14,19 @@ namespace eshop.api.customer.dal.DBContext
 
         }
         public DbSet<Customer> Customers { get; set; }
+
+        public bool CheckConnection()
+        {
+            try
+            {
+                this.Database.OpenConnection();
+                this.Database.CloseConnection();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
