@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: api-customers
-        image: gcr.io/ancient-yeti-166518/customers:release-4_Old
+        image: gcr.io/ancient-yeti-166518/customers:release-5
         ports:
         - containerPort: 8001
