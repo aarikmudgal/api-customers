@@ -4,6 +4,8 @@ metadata:
   annotations:
     flux.weave.works/automated: "true"
     flux.weave.works/tag.api-customers: glob:release-*
+    apicustomersclusterip: $API_CUSTOMERS_SERVICE_HOST
+    apicustomersport: $API_CUSTOMERS_SERVICE_PORT
   name: api-customers
 spec:
   minReadySeconds: 5
