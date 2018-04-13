@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,17 +15,24 @@ namespace eshop.api.customer.dal.DBContext
         }
         public DbSet<Customer> Customers { get; set; }
 
-        public bool CheckConnection()
+        public void CheckConnection(out bool dbStatusOK)
         {
             try
             {
+
                 this.Database.OpenConnection();
+                this.Database.ExecuteSqlCommand("SELECT 1");
                 this.Database.CloseConnection();
-                return true;
+                dbStatusOK = true;
             }
             catch (Exception ex)
             {
+                dbStatusOK = false;
                 throw ex;
+            }
+            finally
+            {
+                this.Database.CloseConnection();
             }
         }
     }
