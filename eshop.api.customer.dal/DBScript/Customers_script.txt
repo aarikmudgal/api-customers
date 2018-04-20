@@ -9,7 +9,7 @@ CREATE TABLE public."Customers"
     "LastName" text COLLATE pg_catalog."default",
     "Username" text COLLATE pg_catalog."default",
     "Password" text COLLATE pg_catalog."default",
-    CONSTRAINT "PK_Customers" PRIMARY KEY ("CustomerId")
+    CONSTRAINT "PK_Customers" PRIMARY KEY ("Username")
 )
 WITH (
     OIDS = FALSE

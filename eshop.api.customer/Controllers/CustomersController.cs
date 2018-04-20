@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,6 +10,7 @@ using eshop.api.customer.dal.DBContext;
 using eshop.api.customer.dal.Services;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace eshop.api.customer.Controllers
 {
@@ -58,11 +59,12 @@ namespace eshop.api.customer.Controllers
 
         // GET: api/Customers
         [HttpGet]
-        public IActionResult GetCustomers()
+        public async Task<IActionResult> GetCustomers()
         {
             try
             {
-                return new ObjectResult(customerService.GetCustomers());
+                var customers = await customerService.GetCustomers();
+                return Ok(customers);
             }
             catch (Exception ex)
             {
@@ -74,14 +76,14 @@ namespace eshop.api.customer.Controllers
 
         // GET: api/Customers/5
         [HttpGet("{id}")]
-        public IActionResult GetCustomer([FromRoute] string id)
+        public async Task<IActionResult> GetCustomer([FromRoute] string id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var customer = customerService.GetCustomer(id);
+            var customer = await customerService.GetCustomer(id);
 
             if (customer == null)
             {
@@ -93,31 +95,28 @@ namespace eshop.api.customer.Controllers
 
         // PUT: api/Customers/5
         [HttpPut("{id}")]
-        public IActionResult UpdateCustomer([FromRoute] string id, [FromBody] Customer customer)
+        public async Task<IActionResult> UpdateCustomer([FromRoute] string id, [FromBody] Customer customer)
         {
-            string statusMessage;
-            Customer updatedCustomer;
 
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (id != customer.CustomerId)
-            {
-                return BadRequest();
-            }
             try
             {
-                bool status = customerService.UpdateCustomer(id, customer, out updatedCustomer, out statusMessage);
-                if (updatedCustomer == null)
+                Console.WriteLine("Update customer endpoint started");
+              
+                ReturnResult result = await customerService.UpdateCustomerAsync(id, customer);
+             
+                if (result.UpdatedCustomer == null)
                 {
                     return NotFound($"Customer with id {id} not found");
                 }
                 JObject successobj = new JObject()
                 {
-                    { "StatusMessage", statusMessage },
-                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(updatedCustomer)) }
+                    { "StatusMessage", result.StatusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(result.UpdatedCustomer)) }
                 };
                 return Ok(successobj);
             }
@@ -131,10 +130,8 @@ namespace eshop.api.customer.Controllers
 
         // POST: api/Customers
         [HttpPost]
-        public IActionResult AddCustomer([FromBody] Customer customer)
+        public async Task<IActionResult> AddCustomer([FromBody] Customer customer)
         {
-            Customer addedCustomer;
-            string statusMessage;
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -142,11 +139,11 @@ namespace eshop.api.customer.Controllers
 
             try
             {
-                customerService.InsertCustomer(customer, out addedCustomer, out statusMessage);
+                ReturnResult result = await customerService.InsertCustomerAsync(customer);
                 JObject successobj = new JObject()
                 {
-                    { "StatusMessage", statusMessage },
-                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(addedCustomer)) }
+                    { "StatusMessage", result.StatusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(result.UpdatedCustomer)) }
                 };
                 return Ok(successobj);
             }
@@ -160,10 +157,8 @@ namespace eshop.api.customer.Controllers
 
         // DELETE: api/Customers/5
         [HttpDelete("{id}")]
-        public IActionResult DeleteCustomer([FromRoute] string id)
+        public async Task<IActionResult> DeleteCustomer([FromRoute] string id)
         {
-            Customer deletedCustomer;
-            string statusMessage;
 
             if (!ModelState.IsValid)
             {
@@ -172,15 +167,15 @@ namespace eshop.api.customer.Controllers
 
             try
             {
-                var status = customerService.DeleteCustomer(id, out deletedCustomer, out statusMessage);
-                if (deletedCustomer == null)
+                ReturnResult result = await customerService.DeleteCustomerAsync(id);
+                if (result.UpdatedCustomer == null)
                 {
                     return NotFound($"Customer with id {id} not found");
                 }
                 JObject successobj = new JObject()
                 {
-                    { "StatusMessage", statusMessage },
-                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(deletedCustomer)) }
+                    { "StatusMessage", result.StatusMessage },
+                    { "Customer", JObject.Parse(JsonConvert.SerializeObject(result.UpdatedCustomer)) }
                 };
                 return Ok(successobj);
 
@@ -195,11 +190,9 @@ namespace eshop.api.customer.Controllers
         // DELETE: api/Customers/5
         [HttpPost]
         [Route("login")]
-        public IActionResult Login([FromBody] Customer customer)
+        public async Task<IActionResult> Login([FromBody] Customer customer)
         {
-            string statusMessage;
-            Customer validCustomer;
-
+            ReturnResult result = new ReturnResult();
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -207,19 +200,23 @@ namespace eshop.api.customer.Controllers
 
             try
             {
-                var isValidUser = customerService.Authenticate(customer.Username, customer.Password, out validCustomer, out statusMessage);
-                if (isValidUser == true)
+                var task = customerService.AuthenticateAsync(customer.Username, customer.Password);
+
+                //Console.WriteLine("Do Something else till Long Authenticate process completes");
+
+                result = await task;
+                if (result.UpdatedCustomer != null)
                 {
                     JObject successobj = new JObject()
                     {
-                        { "StatusMessage", statusMessage },
-                        { "Customer", JObject.Parse(JsonConvert.SerializeObject(validCustomer)) }
+                        { "StatusMessage", result.StatusMessage },
+                        { "Customer", JObject.Parse(JsonConvert.SerializeObject(result.UpdatedCustomer)) }
                     };
                     return Ok(successobj);
                 }
                 else
                 {
-                    return  StatusCode(401, statusMessage);
+                    return  StatusCode(401, result.StatusMessage);
                 }
 
             }

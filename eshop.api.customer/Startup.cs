@@ -36,6 +36,10 @@ namespace eshop.api.customer
             //app.UseCors(builder => builder.WithOrigins("http://35.200.233.17").AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 
             app.UseMvc();
+           
+            // Shows UseCors with CorsPolicyBuilder.
+            app.UseCors(builder =>
+               builder.WithOrigins("http://10.31.88.124"));
         }
     }
 }

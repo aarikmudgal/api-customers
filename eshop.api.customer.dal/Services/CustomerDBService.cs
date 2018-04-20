@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace eshop.api.customer.dal.Services
@@ -35,11 +36,11 @@ namespace eshop.api.customer.dal.Services
             }
         }
 
-        public IEnumerable<Customer> GetCustomers()
+        public async Task<IList<Customer>> GetCustomers()
         {
             try
             {
-                return _context.Customers;
+               return await _context.Customers.ToListAsync();
             }
             catch (Exception e)
             {
@@ -49,40 +50,45 @@ namespace eshop.api.customer.dal.Services
             
         }
 
-        public Customer GetCustomer(string id)
+        public async Task<Customer> GetCustomer(string id)
         {
-            return _context.Customers.SingleOrDefault(m => m.CustomerId == id);
+            return await _context.Customers.SingleOrDefaultAsync(m => m.CustomerId == id);
         }
 
-        public bool UpdateCustomer(string id, Customer customer, out Customer updatedCustomer, out string statusMessage)
+        public async Task<ReturnResult> UpdateCustomerAsync(string id, Customer customer)
         {
-            _context.Entry(customer).State = EntityState.Modified;
-
+            // _context.Entry(customer).State = EntityState.Modified;
+            ReturnResult result = new ReturnResult();
             try
             {
+                Console.WriteLine("Async update starated");
+                Console.WriteLine("Check if customer exists");
                 if (!CustomerExists(id))
                 {
-                    updatedCustomer = null;
-                    statusMessage = $"The Customer ID {id} does not exist.";
+                    result.UpdatedCustomer = null;
+                    result.StatusMessage = $"The Customer ID {id} does not exist.";
+                    return result;
                 }
 
+                Console.WriteLine("encryption started");
                 byte[] bytes = Encoding.UTF8.GetBytes(customer.Password);
                 string encodedPassword = Convert.ToBase64String(bytes);
 
                 customer.Password = encodedPassword;
 
-                _context.SaveChanges();
-                statusMessage = $"Customer details updated successfully for customer Id - {id}";
-                updatedCustomer = customer;
-                return true;
+                await _context.SaveChangesAsync();
+                result.StatusMessage = $"Customer details updated successfully for customer Id - {id}";
+                result.UpdatedCustomer = customer;
+                return result;
             }
             catch (DbUpdateConcurrencyException e)
             {
-                statusMessage = e.Message;
+                result.UpdatedCustomer = null;
+                result.StatusMessage = e.Message;
                 throw e;
             }
         }
-        public bool InsertCustomer(Customer customer, out Customer addedCustomer, out string statusMessage)
+        public async Task<ReturnResult> InsertCustomerAsync(Customer customer)
         {
             try
             {
@@ -93,42 +99,43 @@ namespace eshop.api.customer.dal.Services
 
                 customer.Password = encodedPassword;
 
-                _context.Customers.Add(customer);
-                //_context.SaveChangesAsync();
-                int status =_context.SaveChanges();
-                addedCustomer = customer;
-                statusMessage = "New customer added successfully";
-                return true;
+                await _context.Customers.AddAsync(customer);
+                await _context.SaveChangesAsync();
+                ReturnResult result = new ReturnResult()
+                {
+                    StatusMessage = "New customer added successfully",
+                    UpdatedCustomer = customer
+                };
+                return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //statusMessage = e.Message;
-                addedCustomer = null;
-                throw ;
+                throw ex;
             }
 
         }
-        public bool DeleteCustomer(string id, out Customer deletedCustomer, out string statusMessage)
+        public async Task<ReturnResult> DeleteCustomerAsync(string id)
         {
+            ReturnResult result = new ReturnResult();
             try
             {
-                var customer = _context.Customers.SingleOrDefault(m => m.CustomerId == id);
+                var customer = await _context.Customers.SingleOrDefaultAsync(m => m.CustomerId == id);
                 if (customer == null)
                 {
-                    deletedCustomer = null;
-                    statusMessage = $"Customer with id - {id} not found";
-                    return false;
+                    result.UpdatedCustomer = null;
+                    result.StatusMessage = $"Customer with id - {id} not found";
+                    return result;
                 }
                 _context.Customers.Remove(customer);
-                _context.SaveChanges();
-                deletedCustomer = customer;
-                statusMessage = $"Customer with id - {id} deleted successfully";
-                return true;
+                await _context.SaveChangesAsync();
+                result.UpdatedCustomer = customer;
+                result.StatusMessage = $"Customer with id - {id} deleted successfully";
+                return result;
             }
             catch (Exception e)
             {
-                statusMessage = e.Message;
-                deletedCustomer = null;
+                result.StatusMessage = e.Message;
+                result.UpdatedCustomer = null;
                 throw e;
             }
         }
@@ -137,28 +144,27 @@ namespace eshop.api.customer.dal.Services
             return _context.Customers.Any(e => e.CustomerId == id);
         }
 
-        public bool Authenticate(string username, string password, out Customer customerObj, out string statusMessage)
+        public async Task<ReturnResult> AuthenticateAsync(string username, string password)
         {
+            ReturnResult result = new ReturnResult();
             try
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(password);
                 string encodedPassword = Convert.ToBase64String(bytes);
 
-                var customer = _context.Customers.SingleOrDefault(cust => cust.Username == username && cust.Password == encodedPassword);
+                var customer = await _context.Customers.SingleOrDefaultAsync(cust => cust.Username == username && cust.Password == encodedPassword);
 
                 if (customer == null)
                 {
-                    customerObj = null;
-                    statusMessage = $"Customer Unauthorised";
-                    return false;
+                    result.UpdatedCustomer = null;
+                    result.StatusMessage = $"Customer Unauthorised";
                 }
                 else
                 {
-                    customerObj = customer;
-                    statusMessage = $"Customer Authorised";
-                    return true;
+                    result.UpdatedCustomer = customer;
+                    result.StatusMessage = $"Customer Authorised";
                 }
-
+                return result;
             }
             catch (Exception ex)
             {
