@@ -39,7 +39,7 @@ namespace eshop.api.customer
            
             // Shows UseCors with CorsPolicyBuilder.
             app.UseCors(builder =>
-               builder.WithOrigins("http://10.31.88.124"));
+               builder.WithOrigins("http://10.36.9.33"));
         }
     }
 }
